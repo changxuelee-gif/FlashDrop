@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-multipart
+aiofiles
+redis
+pymysql
+sqlalchemy
+python-dotenv

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户反馈管理 - FlashDrop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .feedback-card {
+            margin-bottom: 15px;
+            border-left: 4px solid #6c757d;
+        }
+        .feedback-card.pending {
+            border-left-color: #ffc107;
+        }
+        .feedback-card.processing {
+            border-left-color: #17a2b8;
+        }
+        .feedback-card.resolved {
+            border-left-color: #28a745;
+        }
+        .feedback-card.closed {
+            border-left-color: #dc3545;
+        }
+        .status-badge {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 左侧导航 -->
+            <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+                <div class="sidebar-sticky">
+                    <h5 class="sidebar-heading text-muted">管理菜单</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">
+                                <i class="fa fa-comment-o mr-2"></i>
+                                用户反馈管理
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- 右侧内容 -->
+            <main role="main" class="col-md-10 ml-sm-auto px-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">用户反馈管理</h1>
+                </div>
+
+                <!-- 筛选和搜索 -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <form id="filterForm">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="sr-only" for="feedbackType">反馈类型</label>
+                                    <select class="form-control" id="feedbackType" name="feedback_type">
+                                        <option value="">全部类型</option>
+                                        <option value="bug">功能bug</option>
+                                        <option value="suggestion">功能建议</option>
+                                        <option value="report">违规内容举报</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="sr-only" for="status">处理状态</label>
+                                    <select class="form-control" id="status" name="status">
+                                        <option value="">全部状态</option>
+                                        <option value="pending">待处理</option>
+                                        <option value="processing">处理中</option>
+                                        <option value="resolved">已解决</option>
+                                        <option value="closed">已关闭</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="sr-only" for="keyword">关键词</label>
+                                    <input type="text" class="form-control" id="keyword" name="keyword" placeholder="搜索内容或联系方式">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fa fa-search"></i> 搜索
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 反馈列表 -->
+                <div id="feedbackList">
+                    <!-- 列表内容将通过JavaScript动态加载 -->
+                </div>
+
+                <!-- 分页 -->
+                <nav aria-label="Page navigation" id="pagination"></nav>
+
+                <!-- 反馈详情模态框 -->
+                <div class="modal fade" id="feedbackModal" tabindex="-1" role="dialog" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="feedbackModalLabel">反馈详情</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body" id="feedbackModalBody">
+                                <!-- 详情内容将通过JavaScript动态加载 -->
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let currentPage = 1;
+        let pageSize = 10;
+
+        // 页面加载时初始化
+        $(document).ready(function() {
+            loadFeedbackList();
+            
+            // 筛选表单提交事件
+            $('#filterForm').submit(function(e) {
+                e.preventDefault();
+                currentPage = 1;
+                loadFeedbackList();
+            });
+        });
+
+        // 加载反馈列表
+        function loadFeedbackList() {
+            // 获取筛选条件
+            const feedbackType = $('#feedbackType').val();
+            const status = $('#status').val();
+            const keyword = $('#keyword').val();
+
+            // 构建请求URL
+            let url = `/api/feedback/list?page=${currentPage}&page_size=${pageSize}`;
+            if (feedbackType) url += `&feedback_type=${feedbackType}`;
+            if (status) url += `&status=${status}`;
+            if (keyword) url += `&keyword=${keyword}`;
+
+            // 发送请求
+            $.getJSON(url, function(response) {
+                if (response.status === 'success') {
+                    renderFeedbackList(response.data.list);
+                    renderPagination(response.data);
+                } else {
+                    alert('加载失败: ' + response.message);
+                }
+            }).fail(function() {
+                alert('加载失败，请稍后重试');
+            });
+        }
+
+        // 渲染反馈列表
+        function renderFeedbackList(feedbackList) {
+            let html = '';
+            
+            if (feedbackList.length === 0) {
+                html = '<div class="card text-center"><div class="card-body"><p class="text-muted">暂无反馈数据</p></div></div>';
+            } else {
+                feedbackList.forEach(function(feedback) {
+                    const statusText = {
+                        'pending': '待处理',
+                        'processing': '处理中',
+                        'resolved': '已解决',
+                        'closed': '已关闭'
+                    };
+                    
+                    const statusClass = {
+                        'pending': 'warning',
+                        'processing': 'info',
+                        'resolved': 'success',
+                        'closed': 'danger'
+                    };
+
+                    html += `
+                        <div class="card feedback-card ${feedback.status}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title">
+                                            <span class="badge badge-${statusClass[feedback.status]}">${statusText[feedback.status]}</span>
+                                            ${feedback.feedback_type === 'bug' ? '功能bug' : feedback.feedback_type === 'suggestion' ? '功能建议' : '违规内容举报'}
+                                        </h5>
+                                        <p class="card-text">${feedback.content}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-muted small">#${feedback.id}</span><br>
+                                        <span class="text-muted small">${feedback.create_time}</span><br>
+                                        <button class="btn btn-sm btn-primary mt-2" onclick="showFeedbackDetail(${feedback.id})"><i class="fa fa-eye"></i> 查看详情</button>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    ${feedback.contact ? `<span class="text-muted small"><i class="fa fa-envelope"></i> ${feedback.contact}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            $('#feedbackList').html(html);
+        }
+
+        // 渲染分页
+        function renderPagination(pagination) {
+            const { total, page, page_size, pages } = pagination;
+            
+            if (pages <= 1) {
+                $('#pagination').hide();
+                return;
+            }
+
+            let html = `<ul class="pagination justify-content-center">`;
+            
+            // 上一页
+            html += `<li class="page-item ${page === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${page - 1})" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>`;
+            
+            // 页码
+            for (let i = 1; i <= pages; i++) {
+                if (i === 1 || i === pages || (i >= page - 2 && i <= page + 2)) {
+                    html += `<li class="page-item ${i === page ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+                            </li>`;
+                } else if (i === page - 3 || i === page + 3) {
+                    html += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+                }
+            }
+            
+            // 下一页
+            html += `<li class="page-item ${page === pages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${page + 1})" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>`;
+            
+            html += `</ul>`;
+            
+            $('#pagination').html(html).show();
+        }
+
+        // 跳转到指定页码
+        function goToPage(page) {
+            currentPage = page;
+            loadFeedbackList();
+        }
+
+        // 显示反馈详情
+        function showFeedbackDetail(id) {
+            $.getJSON(`/api/feedback/${id}`, function(response) {
+                if (response.status === 'success') {
+                    const feedback = response.data;
+                    
+                    const statusText = {
+                        'pending': '待处理',
+                        'processing': '处理中',
+                        'resolved': '已解决',
+                        'closed': '已关闭'
+                    };
+                    
+                    const statusClass = {
+                        'pending': 'warning',
+                        'processing': 'info',
+                        'resolved': 'success',
+                        'closed': 'danger'
+                    };
+
+                    let html = `
+                        <div class="mb-3">
+                            <h6>基本信息</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <p><strong>反馈ID:</strong> #${feedback.id}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p><strong>反馈类型:</strong> ${feedback.feedback_type === 'bug' ? '功能bug' : feedback.feedback_type === 'suggestion' ? '功能建议' : '违规内容举报'}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p><strong>处理状态:</strong> <span class="badge badge-${statusClass[feedback.status]}">${statusText[feedback.status]}</span></p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <p><strong>创建时间:</strong> ${feedback.create_time}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p><strong>更新时间:</strong> ${feedback.update_time}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    ${feedback.handled_by ? `<p><strong>处理人:</strong> ${feedback.handled_by}</p>` : ''}
+                                </div>
+                            </div>
+                            ${feedback.contact ? `<div class="row"><div class="col-md-12"><p><strong>联系方式:</strong> ${feedback.contact}</p></div></div>` : ''}
+                        </div>
+                        <div class="mb-3">
+                            <h6>反馈内容</h6>
+                            <p>${feedback.content}</p>
+                        </div>
+                        ${feedback.remark ? `
+                            <div class="mb-3">
+                                <h6>处理备注</h6>
+                                <p>${feedback.remark}</p>
+                            </div>
+                        ` : ''}
+                        <div class="mb-3">
+                            <h6>更新状态</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <select class="form-control" id="updateStatus" data-id="${feedback.id}">
+                                        <option value="pending" ${feedback.status === 'pending' ? 'selected' : ''}>待处理</option>
+                                        <option value="processing" ${feedback.status === 'processing' ? 'selected' : ''}>处理中</option>
+                                        <option value="resolved" ${feedback.status === 'resolved' ? 'selected' : ''}>已解决</option>
+                                        <option value="closed" ${feedback.status === 'closed' ? 'selected' : ''}>已关闭</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="updateRemark" placeholder="处理备注">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary btn-block" onclick="updateFeedbackStatus(${feedback.id})"><i class="fa fa-save"></i> 保存</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    $('#feedbackModalBody').html(html);
+                    $('#feedbackModal').modal('show');
+                } else {
+                    alert('加载详情失败: ' + response.message);
+                }
+            }).fail(function() {
+                alert('加载详情失败，请稍后重试');
+            });
+        }
+
+        // 更新反馈状态
+        function updateFeedbackStatus(id) {
+            const status = $(`#updateStatus[data-id='${id}']`).val();
+            const remark = $('#updateRemark').val();
+
+            $.ajax({
+                url: `/api/feedback/${id}`,
+                type: 'PUT',
+                data: { status: status, remark: remark },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alert('更新成功');
+                        $('#feedbackModal').modal('hide');
+                        loadFeedbackList();
+                    } else {
+                        alert('更新失败: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('更新失败，请稍后重试');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

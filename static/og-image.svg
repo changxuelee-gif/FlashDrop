@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- 背景渐变 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+    <filter id="dropShadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.2)" />
+    </filter>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="1200" height="630" fill="url(#bgGradient)" />
+  
+  <!-- 主图标 -->
+  <g transform="translate(600, 250)" filter="url(#dropShadow)">
+    <!-- 文件夹形状 -->
+    <path d="M150 40 L300 40 L300 220 L0 220 L0 80 Z" fill="white" />
+    <path d="M150 40 L300 40 L300 80 L150 80 Z" fill="#E5E7EB" />
+    
+    <!-- 箭头 -->
+    <path d="M100 120 L200 120 L200 100 L240 130 L200 160 L200 140 L100 140 Z" fill="#4F46E5" />
+  </g>
+  
+  <!-- 应用名称 -->
+  <text x="600" y="450" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">
+    FlashDrop
+  </text>
+  
+  <!-- 应用描述 -->
+  <text x="600" y="510" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" font-size="32" fill="white" opacity="0.9" text-anchor="middle">
+    简单快速的文件分享服务
+  </text>
+  
+  <!-- 网站URL -->
+  <text x="600" y="560" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" font-size="24" fill="white" opacity="0.8" text-anchor="middle">
+    https://www.flashdrop.com
+  </text>
+</svg>
